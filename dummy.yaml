@@ -1,0 +1,202 @@
+---
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: function-go-templating
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.9.2
+---
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: function-auto-ready
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/function-auto-ready:v0.4.2
+---
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-kubernetes
+spec:
+  package: xpkg.upbound.io/upbound/provider-kubernetes:v0.17.0
+---
+apiVersion: kubernetes.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: default
+spec:
+  credentials:
+    source: InjectedIdentity
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    acme/composition-selector: manual
+    service: dummy
+  name: xdummys.acme.com
+spec:
+  claimNames:
+    kind: Dummy
+    plural: dummys
+  defaultCompositionRef:
+    name: xdummys.acme.com
+  group: acme.com
+  names:
+    kind: XDummy
+    plural: xdummys
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .apiVersion
+      name: API
+      type: string
+    - jsonPath: .spec.compositionRevisionRef.name
+      name: COMPOSITION REVISION
+      priority: 1
+      type: string
+    - jsonPath: .spec.compositionRevisionSelector.matchLabels
+      name: SELECTOR
+      priority: 1
+      type: string
+    name: v1alpha1
+    referenceable: true
+    schema:
+      openAPIV3Schema:
+        properties:
+          spec:
+            default:
+              deletionPolicy: Delete
+              managementPolicies:
+              - '*'
+              providerConfigRef:
+                name: default
+                policy:
+                  resolution: Required
+                  resolve: IfNotPresent
+            properties:
+              deletionPolicy:
+                default: Delete
+                description: DeletionPolicy defines the policy for deleting the resource
+                  when the resource is removed from the composition
+                enum:
+                - Delete
+                - Orphan
+                type: string
+              managementPolicies:
+                default:
+                - '*'
+                description: ManagementPolicies determine which actions Crossplane
+                  can take on a managed resource and its corresponding external resource
+                items:
+                  enum:
+                  - '*'
+                  - Create
+                  - Delete
+                  - LateInitialize
+                  - Observe
+                  - Update
+                  type: string
+                type: array
+              providerConfigRef:
+                default:
+                  name: default
+                  policy:
+                    resolution: Required
+                    resolve: IfNotPresent
+                description: ProviderConfigRef is transparently passed down to the
+                  underlying provider
+                properties:
+                  name:
+                    default: default
+                    description: Name of the ProviderConfig to use for AWS API calls
+                    type: string
+                  policy:
+                    default:
+                      resolution: Required
+                      resolve: IfNotPresent
+                    description: Policies for referencing the ProviderConfig
+                    properties:
+                      resolution:
+                        default: Required
+                        enum:
+                        - Optional
+                        - Required
+                        type: string
+                      resolve:
+                        default: IfNotPresent
+                        enum:
+                        - Always
+                        - IfNotPresent
+                        type: string
+                    type: object
+                type: object
+            type: object
+          status:
+            properties:
+              data:
+                description: Freeform field containing status for this XR
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+---
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  labels:
+    crossplane.io/xrd: xdummys.acme.com
+    acme/composition-selector: manual
+    service: dummy
+  name: xdummys.acme.com
+spec:
+  compositeTypeRef:
+    apiVersion: acme.com/v1alpha1
+    kind: XDummy
+  mode: Pipeline
+  pipeline:
+  - functionRef:
+      name: function-go-templating
+    input:
+      apiVersion: gotemplating.fn.crossplane.io/v1beta1
+      inline:
+        template: |-
+          ---
+          apiVersion: kubernetes.crossplane.io/v1alpha2
+          kind: Object
+          metadata:
+            name: dummy-cm
+            annotations:
+              gotemplating.fn.crossplane.io/composition-resource-name: dummy-cm
+          spec:
+            forProvider:
+              manifest:
+                apiVersion: v1
+                kind: ConfigMap
+                metadata:
+                  name: dummy
+                  namespace: default
+                  labels:
+                    dummy: "true"
+                data:
+                  dummy: sure
+            providerConfigRef:
+              name: default
+      kind: GoTemplate
+      source: Inline
+    step: render-go-templates
+  - functionRef:
+      name: function-auto-ready
+    step: automatically-detect-readiness
+---
+apiVersion: acme.com/v1alpha1
+kind: Dummy
+metadata:
+  name: dummy
+spec: {}
