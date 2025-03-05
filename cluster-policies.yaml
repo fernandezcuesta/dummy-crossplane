@@ -1,0 +1,76 @@
+---
+# Source: kyverno-policies/templates/check-private-compositions.tpl.yaml
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: check-private-compositions
+spec:
+  background: false
+  rules:
+  - name: check-private-compositions
+    context:
+    - name: privateCompositions
+      apiCall:
+        jmesPath: items[?status.conditions[?type!='Offered']].[spec.names.kind][]
+        method: GET
+        urlPath: /apis/apiextensions.crossplane.io/v1/compositeresourcedefinitions
+    match:
+      any:
+      - resources:
+          kinds:
+          - acme.com/*/*
+    preconditions:
+      all:
+      - key: "{{ request.object.kind }}"
+        operator: In
+        value: "{{ privateCompositions }}"
+    validate:
+      allowExistingViolations: true
+      deny:
+        conditions:
+          any:
+          - key: "{{ serviceAccountName || 'unknown' }}"
+            operator: AllNotIn
+            value:
+            - crossplane
+            - velero
+      message: Only allowed controllers can deploy private compositions
+  validationFailureAction: Enforce
+---
+# Source: kyverno-policies/templates/check-private-crossplane-resources.tpl.yaml
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: check-private-crossplane-resources
+spec:
+  background: false
+  rules:
+  - name: check-private-crossplane-resources
+    match:
+      any:
+      - resources:
+          kinds:
+          - "*.upbound.io/*/*"
+          - "*.crossplane.io/*/*"
+    preconditions:
+      all:
+      - key: "{{ request.kind.group }}"
+        operator: NotEquals
+        value: pkg.crossplane.io
+      - key: "{{ request.kind.kind }}"
+        operator: AllNotIn
+        value:
+        - ProviderConfig
+        - Usage
+    validate:
+      allowExistingViolations: true
+      message: Only Crossplane controller can deploy provider-specific resources
+      deny:
+        conditions:
+          any:
+          - key: "{{ serviceAccountNamespace || 'unknown' }}"
+            operator: AllNotIn
+            value:
+            - crossplane-system
+            - velero
+  validationFailureAction: Enforce
