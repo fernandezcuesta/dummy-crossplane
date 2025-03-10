@@ -3,7 +3,7 @@ apiVersion: pkg.crossplane.io/v1beta1
 kind: Function
 metadata:
   annotations:
-    argocd.argoproj.io/sync-wave: -1
+    argocd.argoproj.io/sync-wave: "-1"
   name: function-go-templating
 spec:
   package: xpkg.upbound.io/crossplane-contrib/function-go-templating:v0.9.2
@@ -12,7 +12,7 @@ apiVersion: pkg.crossplane.io/v1beta1
 kind: Function
 metadata:
   annotations:
-    argocd.argoproj.io/sync-wave: -1
+    argocd.argoproj.io/sync-wave: "-1"
   name: function-auto-ready
 spec:
   package: xpkg.upbound.io/crossplane-contrib/function-auto-ready:v0.4.2
@@ -21,7 +21,7 @@ apiVersion: pkg.crossplane.io/v1
 kind: Provider
 metadata:
   annotations:
-    argocd.argoproj.io/sync-wave: -1
+    argocd.argoproj.io/sync-wave: "-1"
   name: provider-kubernetes
 spec:
   package: xpkg.upbound.io/upbound/provider-kubernetes:v0.17.0
@@ -30,7 +30,7 @@ apiVersion: kubernetes.crossplane.io/v1alpha1
 kind: ProviderConfig
 metadata:
   annotations:
-    argocd.argoproj.io/sync-wave: 0
+    argocd.argoproj.io/sync-wave: "0"
   name: default
 spec:
   credentials:
@@ -218,6 +218,6 @@ apiVersion: acme.com/v1alpha1
 kind: Dummy
 metadata:
   annotations:
-    argocd.argoproj.io/sync-wave: 2
+    argocd.argoproj.io/sync-wave: "2"
   name: dummy
 spec: {}
