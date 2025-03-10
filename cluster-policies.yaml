@@ -29,11 +29,11 @@ spec:
       deny:
         conditions:
           any:
-          - key: "{{ serviceAccountName || 'unknown' }}"
+          - key: "{{  request.userInfo.username }}"
             operator: AllNotIn
             value:
-            - crossplane
-            - velero
+            - system:serviceaccount:crossplane-system:crossplane
+            - system:serviceaccount:velero:velero
       message: Only allowed controllers can deploy private compositions
   validationFailureAction: Enforce
 ---
@@ -50,27 +50,26 @@ spec:
       any:
       - resources:
           kinds:
-          - "*.upbound.io/*/*"
-          - "*.crossplane.io/*/*"
-    preconditions:
-      all:
-      - key: "{{ request.kind.group }}"
-        operator: NotEquals
-        value: pkg.crossplane.io
-      - key: "{{ request.kind.kind }}"
-        operator: AllNotIn
-        value:
-        - ProviderConfig
-        - Usage
+          # - "*.upbound.io/*/*"
+          - "*crossplane.io/*/*"
+    celPreconditions:
+      - name: Crossplane core resources
+        expression: >-
+          request.resource.kind.group.endsWith('crossplane.io') ||
+          request.resource.kind.group.endsWith('upbound.io')
+      - name: Bypass allowed resources
+        expression: >-
+          request.resource.kind.group == 'pkg.crossplane.io' &&
+          request.resource.kind.kind in ["ProviderConfig", "Usage"]
     validate:
       allowExistingViolations: true
       message: Only Crossplane controller can deploy provider-specific resources
       deny:
         conditions:
           any:
-          - key: "{{ serviceAccountNamespace || 'unknown' }}"
+          - key: "{{ request.userInfo.username }}"
             operator: AllNotIn
             value:
-            - crossplane-system
-            - velero
+            - system:serviceaccount:crossplane-system:crossplane
+            - system:serviceaccount:velero:velero
   validationFailureAction: Enforce

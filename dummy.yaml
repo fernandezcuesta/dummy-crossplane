@@ -99,6 +99,17 @@ spec:
                   - Update
                   type: string
                 type: array
+              parameters:
+                description: Parameters are the inputs to the composition
+                items:
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                      default: default
+                  type: object
+                type: array
               providerConfigRef:
                 default:
                   name: default
@@ -180,8 +191,8 @@ spec:
                 apiVersion: v1
                 kind: ConfigMap
                 metadata:
-                  name: dummy
-                  namespace: default
+                  name: {{ default .observed.composite.resource.metadata.name .observed.composite.resource.spec.parameters.name }}
+                  namespace: {{ default "default" .observed.composite.resource.spec.parameters.namespace }}
                   labels:
                     dummy: "true"
                 data:
