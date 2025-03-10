@@ -109,15 +109,13 @@ spec:
                 type: array
               parameters:
                 description: Parameters are the inputs to the composition
-                items:
-                  properties:
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                      default: default
-                  type: object
-                type: array
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                    default: default
+                type: object
               providerConfigRef:
                 default:
                   name: default
