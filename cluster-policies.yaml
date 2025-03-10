@@ -51,7 +51,7 @@ spec:
       - resources:
           kinds:
           # - "*.upbound.io/*/*"
-          - "*"
+          - "*crossplane.io*"
     celPreconditions:
       - name: Crossplane core resources
         expression: >-
