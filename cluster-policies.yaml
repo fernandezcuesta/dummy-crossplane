@@ -55,7 +55,7 @@ spec:
     match:
       any:
       - resources:
-          kinds: {{ crossplaneApis }}
+          kinds: "{{ crossplaneApis }}"
     celPreconditions:
       - name: Bypass allowed resources
         expression: >-
