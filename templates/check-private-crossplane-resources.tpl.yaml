@@ -41,6 +41,7 @@ spec:
         value:
         - ProviderConfig
         - Usage
+    skipBackgroundRequests: true
     validate:
       allowExistingViolations: true
       message: Only Crossplane or Velero can deploy provider-specific resources

@@ -1,0 +1,62 @@
+{{- $policy := include "helpers.customPolicy" (dict
+  "name" "checkPrivateCompositions"
+  "context" .
+  "kind" "ClusterPolicy"
+) | fromYaml }}
+{{- $capabilities := .Capabilities.APIVersions }}
+{{- $crossplaneIacCapabilities := list }}
+{{- range $capabilities }}
+  {{- if contains "acme.com" . }}
+    {{- $crossplaneIacCapabilities = append $crossplaneIacCapabilities . }}
+  {{- end }}
+{{- end }}
+{{- if and $policy.enabled
+  ($capabilities.Has "apiextensions.crossplane.io/v1/Composition")
+  $crossplaneIacCapabilities
+}}
+apiVersion: kyverno.io/v1
+kind: {{ $policy.kind }}
+metadata:
+  name: {{ $policy.name }}
+  annotations:
+    policies.kyverno.io/title: >-
+      Check that only allowed controllers can deploy private composite resources
+    policies.kyverno.io/category: Validate
+    policies.kyverno.io/subject: Crossplane, Composition, Cluster, Velero
+    policies.kyverno.io/minversion: 1.6.0
+    policies.kyverno.io/description: >-
+      This policy will validate that private compositions are only deployed by Crossplane and not
+      by other controllers or users, with the exception of Velero for restore purposes
+spec:
+  background: false
+  rules:
+  - name: {{ $policy.name }}
+    context:
+    - name: privateCompositions
+      apiCall:
+        jmesPath: items[?status.conditions[?type!='Offered']].[spec.names.kind][]
+        method: GET
+        urlPath: /apis/apiextensions.crossplane.io/v1/compositeresourcedefinitions
+    match:
+      any:
+      - resources:
+          kinds:
+          - acme.com/*/*
+    preconditions:
+      all:
+      - key: "{{ `{{ request.object.kind }}` }}"
+        operator: In
+        value: "{{ `{{ privateCompositions }}` }}"
+    validate:
+      allowExistingViolations: true
+      deny:
+        conditions:
+          any:
+          - key: "{{ `{{ serviceAccountName || 'unknown' }}` }}"
+            operator: AllNotIn
+            value:
+            - crossplane
+            - velero
+      message: Only allowed controllers can deploy private compositions
+  validationFailureAction: {{ .Values.customPolicies.validationFailureAction }}
+{{- end }}
