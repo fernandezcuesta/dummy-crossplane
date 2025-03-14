@@ -1,0 +1,17 @@
+global:
+  builtinPolicies:
+    enabled: true
+  customPolicies:
+    enabled: true
+    checkPrivateCrossplaneResources:
+      enabled: false
+    checkPrivateCompositions:
+      enabled: false
+  reportTTL:
+    kyverno: 168h
+    trivy: 168h
+builtinPolicies:
+  podSecurityStandard: restricted
+  validationFailureAction: Audit # TODO: set to Enforce
+customPolicies:
+  validationFailureAction: Enforce

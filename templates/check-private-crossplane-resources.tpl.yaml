@@ -1,0 +1,55 @@
+{{- $policy := include "helpers.customPolicy" (dict
+  "name" "checkPrivateCrossplaneResources"
+  "context" .
+  "kind" "ClusterPolicy"
+) | fromYaml }}
+{{- if $policy.enabled }}
+apiVersion: kyverno.io/v1
+kind: {{ $policy.kind }}
+metadata:
+  name: {{ $policy.name }}
+  annotations:
+    policies.kyverno.io/title: Check that only allowed controllers can deploy provider resources
+    policies.kyverno.io/category: Validate
+    policies.kyverno.io/subject: Crossplane, Cluster
+    policies.kyverno.io/minversion: 1.6.0
+    policies.kyverno.io/description: >-
+      This policy will validate that Crossplane resources are private and only Crossplane core
+      resources can be directly deployed (from ArgoCD), with the exception of Velero for restore
+      purposes.
+spec:
+  background: false
+  rules:
+  - name: {{ $policy.name }}
+    match:
+      any:
+      - resources:
+          kinds:
+          {{- range $.Capabilities.APIVersions }}
+          {{- if or (contains "crossplane.io" .) (contains "upbound.io" .) }}
+          - {{ . }}
+          {{- end }}
+          {{- end }}
+    preconditions:
+      all:
+      - key: "{{ `{{ request.kind.group }}` }}"
+        operator: NotEquals
+        value: pkg.crossplane.io
+      - key: "{{ `{{ request.kind.kind }}` }}"
+        operator: AllNotIn
+        value:
+        - ProviderConfig
+        - Usage
+    validate:
+      allowExistingViolations: true
+      message: Only Crossplane controller can deploy provider-specific resources
+      deny:
+        conditions:
+          any:
+          - key: "{{ `{{ serviceAccountNamespace || 'unknown' }}` }}"
+            operator: AllNotIn
+            value:
+            - crossplane-system
+            - velero
+  validationFailureAction: {{ .Values.customPolicies.validationFailureAction }}
+{{- end }}
