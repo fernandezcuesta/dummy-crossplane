@@ -47,6 +47,7 @@ spec:
       - key: "{{ `{{ request.object.kind }}` }}"
         operator: In
         value: "{{ `{{ privateCompositions }}` }}"
+    skipBackgroundRequests: true
     validate:
       allowExistingViolations: true
       deny:
