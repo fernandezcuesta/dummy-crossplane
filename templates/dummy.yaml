@@ -188,7 +188,7 @@ spec:
           apiVersion: kubernetes.crossplane.io/v1alpha2
           kind: Object
           metadata:
-            name: {{ default .observed.composite.resource.metadata.name .observed.composite.resource.spec.parameters.name }}
+            name: {{ `{{ default .observed.composite.resource.metadata.name .observed.composite.resource.spec.parameters.name }}` }}
             annotations:
               gotemplating.fn.crossplane.io/composition-resource-name: dummy-cm
           spec:
@@ -197,8 +197,8 @@ spec:
                 apiVersion: v1
                 kind: ConfigMap
                 metadata:
-                  name: {{ default .observed.composite.resource.metadata.name .observed.composite.resource.spec.parameters.name }}
-                  namespace: {{ default "default" .observed.composite.resource.spec.parameters.namespace }}
+                  name: {{ `{{ default .observed.composite.resource.metadata.name .observed.composite.resource.spec.parameters.name }}` }}
+                  namespace: {{ `{{ default "default" .observed.composite.resource.spec.parameters.namespace }}` }}
                   labels:
                     dummy: "true"
                 data:
