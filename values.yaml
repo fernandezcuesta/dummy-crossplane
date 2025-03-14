@@ -4,9 +4,9 @@ global:
   customPolicies:
     enabled: true
     checkPrivateCrossplaneResources:
-      enabled: false
+      enabled: true
     checkPrivateCompositions:
-      enabled: false
+      enabled: true
   reportTTL:
     kyverno: 168h
     trivy: 168h
