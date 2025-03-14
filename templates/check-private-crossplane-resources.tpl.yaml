@@ -26,7 +26,7 @@ spec:
       - resources:
           kinds:
           {{- range $.Capabilities.APIVersions }}
-          {{- if or (contains "crossplane.io" .) (contains "upbound.io" .) }}
+          {{- if regexMatch "^(crossplane.io|upbound.io)/[^/]+/[^/]+$" . }}
           - {{ . }}
           {{- end }}
           {{- end }}
